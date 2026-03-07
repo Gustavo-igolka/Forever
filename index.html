@@ -720,9 +720,22 @@ async function searchUsers(){
   }).join('')
 }
 async function sendRequest(contactId,username){
+  // Check if relation exists in either direction
+  const{data:existing}=await db.from('forever_contacts').select('id,status,user_id,contact_id')
+    .or(`and(user_id.eq.${currentUser.id},contact_id.eq.${contactId}),and(user_id.eq.${contactId},contact_id.eq.${currentUser.id})`)
+  if(existing&&existing.length>0){
+    const rel=existing[0]
+    if(rel.status==='accepted'){toast('Вы уже друзья с '+username);searchUsers();return}
+    if(rel.status==='pending'&&rel.user_id===currentUser.id){toast('Запрос уже отправлен');searchUsers();return}
+    if(rel.status==='pending'&&rel.contact_id===currentUser.id){
+      await db.from('forever_contacts').update({status:'accepted'}).eq('id',rel.id)
+      toast(username+' добавлен в контакты!')
+      await loadContacts();searchUsers();return
+    }
+  }
   const{error}=await db.from('forever_contacts').insert({user_id:currentUser.id,contact_id:contactId,status:'pending'})
-  if(error&&!error.message.includes('unique')){toast('Ошибка: '+error.message);return}
-  toast(`Запрос отправлен → ${username}`)
+  if(error){toast('Ошибка: '+error.message);return}
+  toast('Запрос отправлен → '+username)
   searchUsers()
 }
 async function acceptFromFind(userId){

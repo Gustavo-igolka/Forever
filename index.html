@@ -281,7 +281,7 @@
 <div id="auth-screen" class="overlay">
   <div class="auth-box">
     <div class="auth-logo">FOREVER</div>
-    <div class="auth-tag">Навсегда · RKC Studio · Alpha 0.4</div>
+    <div class="auth-tag">Навсегда · RKC Studio · Alpha 0.4 · Fix 2</div>
     <input id="a-email"    class="auth-inp" type="email"    placeholder="Email">
     <input id="a-password" class="auth-inp" type="password" placeholder="Пароль (мин. 6 символов)">
     <div id="tos-section" style="display:none">
@@ -331,7 +331,7 @@
     </button>
     <div>
       <div class="topbar-logo">FOREVER</div>
-      <div class="topbar-ver">Alpha 0.4 · RKC Studio</div>
+      <div class="topbar-ver">Alpha 0.4 · Fix 2 · RKC Studio</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -431,7 +431,7 @@
           <button class="btn-settings-save" style="color:var(--red);border-color:rgba(255,64,96,0.35);background:rgba(255,64,96,0.08)" onclick="logout()">Выйти из аккаунта</button>
         </div>
         <div class="settings-version">
-          <b style="color:var(--accent)">FOREVER</b> Alpha 0.4<br>
+          <b style="color:var(--accent)">FOREVER</b> Alpha 0.4 · Fix 2<br>
           © 2026 <span style="color:rgba(168,85,247,0.6)">RKC Studio</span><br>
           Rat, Karas and Crab
         </div>
@@ -471,8 +471,15 @@
 
 <script>
 /*
- * FOREVER Alpha 0.4 — RKC Studio (Rat, Karas and Crab)
- * Part of ОБПАО ecosystem
+ * ╔══════════════════════════════════════════╗
+ * ║  FOREVER                                 ║
+ * ║  Стадия: Alpha                           ║
+ * ║  Версия: 0.4                             ║
+ * ║  Фикс:   2                               ║
+ * ║  © 2026 RKC Studio                       ║
+ * ║  Rat, Karas and Crab                     ║
+ * ║  Part of ОБПАО ecosystem                 ║
+ * ╚══════════════════════════════════════════╝
  */
 
 const AVATARS = ['😺','🦊','🐺','🐼','🦝','🐸','🐧','🦄','🐲','🦁','🐯','🦋','🌙','⭐','🔮','🎭','🎲','🚀','🌊','🔥']
@@ -702,11 +709,15 @@ async function searchUsers(){
   const{data}=await db.from('forever_profiles').select('*').ilike('username',`%${q}%`).neq('id',currentUser.id).limit(20)
   if(!data||!data.length){el.innerHTML='<div class="list-empty">Никого не найдено</div>';return}
   const ids=data.map(u=>u.id)
+  // Check contact status in BOTH directions
   const{data:myReqs}=await db.from('forever_contacts').select('contact_id,status').eq('user_id',currentUser.id).in('contact_id',ids)
   const{data:theirReqs}=await db.from('forever_contacts').select('user_id,status').eq('contact_id',currentUser.id).in('user_id',ids)
   const statusMap={}
   if(myReqs)myReqs.forEach(r=>statusMap[r.contact_id]=r.status==='accepted'?'friend':'sent')
-  if(theirReqs)theirReqs.forEach(r=>{if(!statusMap[r.user_id])statusMap[r.user_id]='incoming'})
+  if(theirReqs)theirReqs.forEach(r=>{
+    if(r.status==='accepted')statusMap[r.user_id]='friend'
+    else if(!statusMap[r.user_id])statusMap[r.user_id]='incoming'
+  })
   el.innerHTML=data.map(u=>{
     const s=statusMap[u.id]
     let btn=''

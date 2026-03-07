@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forever — RKC Studio</title>
+  <!-- PWA -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Forever">
+  <meta name="theme-color" content="#05050f">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -431,6 +437,31 @@
     .auth-footer { text-align: center; font-size: 8px; color: var(--muted); margin-top: 18px; letter-spacing: 0.1em; }
     .auth-footer b { color: rgba(168,85,247,0.6); }
 
+    /* ── CONFIRM EMAIL SCREEN ── */
+    .confirm-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
+    .confirm-email-addr {
+      text-align: center; color: var(--accent);
+      font-size: 12px; font-weight: 700;
+      margin: 8px 0 16px; word-break: break-all;
+    }
+    .confirm-hint { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.7; margin-bottom: 18px; }
+    .btn-resend {
+      width: 100%; padding: 9px; border-radius: 8px;
+      font-family: var(--font-m); font-size: 10px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; border: 1px solid rgba(168,85,247,0.3);
+      background: rgba(168,85,247,0.08); color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .btn-resend:hover { background: rgba(168,85,247,0.18); }
+    .btn-back-login {
+      width: 100%; padding: 9px; border-radius: 8px;
+      font-family: var(--font-m); font-size: 10px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .btn-back-login:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
     /* ── TOAST ── */
     #toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -460,11 +491,30 @@
 </head>
 <body>
 
+<!-- ── CONFIRM EMAIL ── -->
+<div id="confirm-screen" class="overlay hidden">
+  <div class="auth-box">
+    <div class="confirm-icon">📬</div>
+    <div class="auth-logo">FOREVER</div>
+    <div class="auth-tag">Подтвердите почту</div>
+    <div class="confirm-email-addr" id="confirm-email-addr">—</div>
+    <div class="confirm-hint">
+      Мы отправили письмо с ссылкой подтверждения.<br>
+      Перейдите по ней и вернитесь сюда — страница<br>
+      обновится автоматически.
+    </div>
+    <button class="btn-resend" onclick="resendConfirm()">Отправить повторно</button>
+    <button class="btn-back-login" onclick="backToLogin()">← Войти с другим аккаунтом</button>
+    <div id="confirm-msg" class="auth-msg"></div>
+    <div class="auth-footer">© 2026 <b>RKC Studio</b> · Rat, Karas and Crab</div>
+  </div>
+</div>
+
 <!-- ── AUTH ── -->
 <div id="auth-screen" class="overlay">
   <div class="auth-box">
     <div class="auth-logo">FOREVER</div>
-    <div class="auth-tag">Навсегда · RKC Studio · Alpha 0.2</div>
+    <div class="auth-tag">Навсегда · RKC Studio · Alpha 0.3</div>
     <input id="a-email"    class="auth-inp" type="email"    placeholder="Email">
     <input id="a-password" class="auth-inp" type="password" placeholder="Пароль (мин. 6 символов)">
     <div class="auth-row">
@@ -472,7 +522,7 @@
       <button class="auth-btn s" onclick="authRegister()">Регистрация</button>
     </div>
     <div id="auth-msg" class="auth-msg"></div>
-    <div class="auth-footer">© 2025 <b>RKC Studio</b> · Rat, Karas and Crab</div>
+    <div class="auth-footer">© 2026 <b>RKC Studio</b> · Rat, Karas and Crab</div>
   </div>
 </div>
 
@@ -486,7 +536,7 @@
       <button class="auth-btn p" onclick="saveUsername()">Сохранить</button>
     </div>
     <div id="setup-msg" class="auth-msg"></div>
-    <div class="auth-footer">© 2025 <b>RKC Studio</b> · Rat, Karas and Crab</div>
+    <div class="auth-footer">© 2026 <b>RKC Studio</b> · Rat, Karas and Crab</div>
   </div>
 </div>
 
@@ -498,7 +548,7 @@
     </button>
     <div>
       <div class="topbar-logo">FOREVER</div>
-      <div class="topbar-ver">Alpha 0.2 · RKC Studio</div>
+      <div class="topbar-ver">Alpha 0.3 · RKC Studio</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -593,8 +643,8 @@
         </div>
 
         <div class="settings-version">
-          <b style="color:var(--accent)">FOREVER</b> Alpha 0.2<br>
-          © 2025 <span>RKC Studio</span><br>
+          <b style="color:var(--accent)">FOREVER</b> Alpha 0.3<br>
+          © 2026 <span>RKC Studio</span><br>
           Rat, Karas and Crab
         </div>
       </div>
@@ -633,7 +683,7 @@
 
 <script>
 /*
- * FOREVER Alpha 0.2 — RKC Studio (Rat, Karas and Crab)
+ * FOREVER Alpha 0.3 — RKC Studio (Rat, Karas and Crab)
  * Part of ОБПАО ecosystem
  *
  * REQUIRED TABLES (SQL):
@@ -733,7 +783,14 @@ async function authLogin() {
   if (!email||!pass) return setAuthMsg('Заполните все поля', true)
   setAuthMsg('Входим...', false)
   const { data, error } = await db.auth.signInWithPassword({ email, password: pass })
-  if (error) return setAuthMsg(error.message, true)
+  if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      showConfirmScreen(email)
+    } else {
+      setAuthMsg(error.message, true)
+    }
+    return
+  }
   await onLogin(data.user)
 }
 async function authRegister() {
@@ -744,8 +801,43 @@ async function authRegister() {
   setAuthMsg('Создаём аккаунт...', false)
   const { data, error } = await db.auth.signUp({ email, password: pass })
   if (error) return setAuthMsg(error.message, true)
-  if (data.user) await onLogin(data.user)
-  else setAuthMsg('Проверьте почту для подтверждения!', false)
+  // If user exists but unconfirmed, or fresh signup needing confirm
+  if (data.user && !data.session) {
+    showConfirmScreen(email)
+  } else if (data.user && data.session) {
+    await onLogin(data.user)
+  } else {
+    showConfirmScreen(email)
+  }
+}
+
+function showConfirmScreen(email) {
+  document.getElementById('auth-screen').classList.add('hidden')
+  document.getElementById('confirm-screen').classList.remove('hidden')
+  document.getElementById('confirm-email-addr').textContent = email
+  // Poll every 4s waiting for confirmation
+  const confirmPoll = setInterval(async () => {
+    const { data: { session } } = await db.auth.getSession()
+    if (session?.user?.email_confirmed_at) {
+      clearInterval(confirmPoll)
+      document.getElementById('confirm-screen').classList.add('hidden')
+      await onLogin(session.user)
+    }
+  }, 4000)
+}
+
+async function resendConfirm() {
+  const email = document.getElementById('confirm-email-addr').textContent
+  const msgEl = document.getElementById('confirm-msg')
+  const { error } = await db.auth.resend({ type: 'signup', email })
+  if (error) { msgEl.textContent = error.message; msgEl.className = 'auth-msg err' }
+  else { msgEl.textContent = 'Письмо отправлено повторно ✓'; msgEl.className = 'auth-msg ok' }
+}
+
+function backToLogin() {
+  document.getElementById('confirm-screen').classList.add('hidden')
+  document.getElementById('auth-screen').classList.remove('hidden')
+  document.getElementById('auth-msg').textContent = ''
 }
 async function onLogin(user) {
   currentUser = user

@@ -5,6 +5,11 @@
 
 begin;
 
+-- Keep implementation-only security helpers outside PostgREST's public schema.
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- 1. Shared profiles table: enable RLS and prevent client-side privilege edits.
 --    Users may read and edit only their own profile. is_admin/is_banned/ban_reason
@@ -36,6 +41,7 @@ grant update (username, settings) on table public.profiles to authenticated;
 
 -- The auth trigger can still invoke this function; direct RPC execution is not needed.
 revoke all on function public.handle_new_user() from public, anon, authenticated;
+alter function public.handle_new_user() set search_path = '';
 
 -- ---------------------------------------------------------------------------
 -- 2. Forever profile rows: public-to-signed-in profile discovery remains,
@@ -65,7 +71,7 @@ grant update (username, last_seen, display_name, bio, avatar_emoji, status_text,
   on table public.forever_profiles to authenticated;
 
 -- Admin ban operations are performed through this narrowly-scoped function.
-create or replace function public.forever_admin_set_ban(
+create or replace function private.forever_admin_set_ban_impl(
   target_user_id uuid,
   should_ban boolean,
   reason text default null,
@@ -99,6 +105,27 @@ begin
   if not found then
     raise exception 'profile not found' using errcode = 'P0002';
   end if;
+end;
+$$;
+
+revoke all on function private.forever_admin_set_ban_impl(uuid, boolean, text, timestamptz)
+  from public, anon, authenticated;
+grant execute on function private.forever_admin_set_ban_impl(uuid, boolean, text, timestamptz)
+  to authenticated;
+
+-- Public RPC wrapper is SECURITY INVOKER; the private implementation enforces admin rights.
+create or replace function public.forever_admin_set_ban(
+  target_user_id uuid,
+  should_ban boolean,
+  reason text default null,
+  ban_until timestamptz default null
+)
+returns void
+language plpgsql
+set search_path = pg_catalog, public
+as $$
+begin
+  perform private.forever_admin_set_ban_impl(target_user_id, should_ban, reason, ban_until);
 end;
 $$;
 
@@ -255,7 +282,7 @@ create policy cmsg_delete on public.forever_channel_messages
 
 -- Groups
 -- SECURITY DEFINER helper avoids recursive RLS when policies inspect membership rows.
-create or replace function public.forever_is_group_member(p_group_id bigint, p_user_id uuid)
+create or replace function private.forever_is_group_member(p_group_id bigint, p_user_id uuid)
 returns boolean
 language sql
 stable
@@ -268,8 +295,8 @@ as $group_member$
     where gm.group_id = p_group_id and gm.user_id = p_user_id
   );
 $group_member$;
-revoke all on function public.forever_is_group_member(bigint, uuid) from public, anon, authenticated;
-grant execute on function public.forever_is_group_member(bigint, uuid) to authenticated;
+revoke all on function private.forever_is_group_member(bigint, uuid) from public, anon, authenticated;
+grant execute on function private.forever_is_group_member(bigint, uuid) to authenticated;
 
 alter table public.forever_groups enable row level security;
 alter table public.forever_group_members enable row level security;
@@ -307,7 +334,7 @@ create policy forever_group_members_select on public.forever_group_members
   for select to authenticated
   using (
     user_id = (select auth.uid())
-    or public.forever_is_group_member(forever_group_members.group_id, (select auth.uid()))
+    or private.forever_is_group_member(forever_group_members.group_id, (select auth.uid()))
   );
 create policy forever_group_members_insert on public.forever_group_members
   for insert to authenticated

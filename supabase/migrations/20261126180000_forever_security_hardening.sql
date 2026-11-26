@@ -254,6 +254,23 @@ create policy cmsg_delete on public.forever_channel_messages
   );
 
 -- Groups
+-- SECURITY DEFINER helper avoids recursive RLS when policies inspect membership rows.
+create or replace function public.forever_is_group_member(p_group_id bigint, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $
+  select exists (
+    select 1
+    from public.forever_group_members gm
+    where gm.group_id = p_group_id and gm.user_id = p_user_id
+  );
+$;
+revoke all on function public.forever_is_group_member(bigint, uuid) from public, anon, authenticated;
+grant execute on function public.forever_is_group_member(bigint, uuid) to authenticated;
+
 alter table public.forever_groups enable row level security;
 alter table public.forever_group_members enable row level security;
 alter table public.forever_group_messages enable row level security;
@@ -294,10 +311,7 @@ create policy forever_group_members_select on public.forever_group_members
       select 1 from public.forever_groups g
       where g.id = forever_group_members.group_id and g.owner_id = (select auth.uid())
     )
-    or exists (
-      select 1 from public.forever_group_members gm
-      where gm.group_id = forever_group_members.group_id and gm.user_id = (select auth.uid())
-    )
+    or public.forever_is_group_member(forever_group_members.group_id, (select auth.uid()))
   );
 create policy forever_group_members_insert on public.forever_group_members
   for insert to authenticated

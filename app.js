@@ -1057,15 +1057,25 @@ async function miniBanUser(){
   if(!currentViewedProfile)return
   const reason=document.getElementById('pm-ban-reason').value.trim()
   if(!reason){toast('Укажи причину бана');return}
-  const{error}=await db.from('forever_profiles').update({is_banned:true,ban_reason:reason}).eq('id',currentViewedProfile.id)
+  const{error}=await db.rpc('forever_admin_set_ban',{
+    target_user_id:currentViewedProfile.id,
+    should_ban:true,
+    reason,
+    ban_until:null
+  })
   if(error){toast('Ошибка: '+error.message);return}
-  toast('🚫 '+( currentViewedProfile.display_name||currentViewedProfile.username)+' забанен')
+  toast('🚫 '+(currentViewedProfile.display_name||currentViewedProfile.username)+' забанен')
   document.getElementById('profile-modal').classList.add('hidden')
   await loadContacts()
 }
 async function miniUnbanUser(){
   if(!currentViewedProfile)return
-  const{error}=await db.from('forever_profiles').update({is_banned:false,ban_reason:null,banned_until:null}).eq('id',currentViewedProfile.id)
+  const{error}=await db.rpc('forever_admin_set_ban',{
+    target_user_id:currentViewedProfile.id,
+    should_ban:false,
+    reason:null,
+    ban_until:null
+  })
   if(error){toast('Ошибка: '+error.message);return}
   toast('✅ Бан снят')
   document.getElementById('profile-modal').classList.add('hidden')

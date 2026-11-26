@@ -51,6 +51,9 @@ drop policy if exists profiles_insert on public.forever_profiles;
 drop policy if exists profiles_select on public.forever_profiles;
 drop policy if exists profiles_select_all on public.forever_profiles;
 drop policy if exists profiles_update_own on public.forever_profiles;
+drop policy if exists forever_profiles_select_authenticated on public.forever_profiles;
+drop policy if exists forever_profiles_insert_own on public.forever_profiles;
+drop policy if exists forever_profiles_update_own on public.forever_profiles;
 
 create policy forever_profiles_select_authenticated on public.forever_profiles
   for select to authenticated using (true);
@@ -336,6 +339,8 @@ create policy forever_group_members_select on public.forever_group_members
     user_id = (select auth.uid())
     or private.forever_is_group_member(forever_group_members.group_id, (select auth.uid()))
   );
+-- Remove the earlier public-schema helper after all dependent policies are replaced.
+drop function if exists public.forever_is_group_member(bigint, uuid);
 create policy forever_group_members_insert on public.forever_group_members
   for insert to authenticated
   with check (

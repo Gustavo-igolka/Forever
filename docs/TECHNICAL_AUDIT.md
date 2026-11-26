@@ -158,7 +158,7 @@ Forever — функциональный прототип мессенджера
 
 ### Применённая миграция
 
-Файл: `supabase/migrations/20261126180000_forever_security_hardening.sql`
+Файл: `supabase/migrations/20261126124929_forever_security_hardening.sql`
 
 Миграция успешно применена к подключённому проекту Supabase **OBPAO**. Запись миграции: `20261126124929_forever_security_hardening`.
 

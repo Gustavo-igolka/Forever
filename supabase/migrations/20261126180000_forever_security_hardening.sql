@@ -261,13 +261,13 @@ language sql
 stable
 security definer
 set search_path = pg_catalog, public
-as $
+as $group_member$
   select exists (
     select 1
     from public.forever_group_members gm
     where gm.group_id = p_group_id and gm.user_id = p_user_id
   );
-$;
+$group_member$;
 revoke all on function public.forever_is_group_member(bigint, uuid) from public, anon, authenticated;
 grant execute on function public.forever_is_group_member(bigint, uuid) to authenticated;
 

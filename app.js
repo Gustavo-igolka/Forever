@@ -1261,12 +1261,35 @@ async function createGroup(){
   const desc=document.getElementById('cg-desc').value.trim()
   const msg=document.getElementById('cg-msg')
   if(!name){msg.textContent='Введи название';msg.style.color='var(--red)';return}
-  msg.textContent='Создаём...';msg.style.color='var(--muted)'
+  msg.textContent='Проверяем сессию...';msg.style.color='var(--muted)'
+
+  // Resolve the user from the active Supabase session instead of trusting
+  // a possibly stale in-memory currentUser reference.
+  const{data:{user},error:authError}=await db.auth.getUser()
+  if(authError||!user){
+    msg.textContent='Ошибка: сессия не подтверждена. Выйди и войди снова.'
+    msg.style.color='var(--red)'
+    return
+  }
+  currentUser=user
+
+  msg.textContent='Создаём...'
   const{data:group,error}=await db.from('forever_groups').insert({
-    name,avatar_emoji:emoji,description:desc||null,owner_id:currentUser.id
+    name,avatar_emoji:emoji,description:desc||null,owner_id:user.id
   }).select().single()
-  if(error){msg.textContent='Ошибка: '+error.message;msg.style.color='var(--red)';return}
-  await db.from('forever_group_members').insert({group_id:group.id,user_id:currentUser.id})
+  if(error){
+    const details=[error.message,error.details,error.hint].filter(Boolean).join(' — ')
+    msg.textContent='Ошибка ['+(error.code||'DB')+']: '+details
+    msg.style.color='var(--red)'
+    return
+  }
+
+  const{error:memberError}=await db.from('forever_group_members').insert({group_id:group.id,user_id:user.id})
+  if(memberError){
+    msg.textContent='Группа создана, но не удалось добавить владельца: '+memberError.message
+    msg.style.color='var(--red)'
+    return
+  }
   closeModal('modal-create-group')
   toast('👥 Группа создана!')
   await loadContacts()

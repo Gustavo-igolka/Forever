@@ -307,10 +307,6 @@ create policy forever_group_members_select on public.forever_group_members
   for select to authenticated
   using (
     user_id = (select auth.uid())
-    or exists (
-      select 1 from public.forever_groups g
-      where g.id = forever_group_members.group_id and g.owner_id = (select auth.uid())
-    )
     or public.forever_is_group_member(forever_group_members.group_id, (select auth.uid()))
   );
 create policy forever_group_members_insert on public.forever_group_members
